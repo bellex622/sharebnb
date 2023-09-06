@@ -12,7 +12,7 @@ aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
 OBJECT_NAME_TO_UPLOAD = 'cat.jpg'
 
 
-def create_presigned_post(bucket_name='sharebnb-r32', object_name=OBJECT_NAME_TO_UPLOAD,
+def create_presigned_post(bucket_name='sharebnbpictures', object_name=OBJECT_NAME_TO_UPLOAD,
                           fields=None, conditions=None, expiration=3600):
     """Generate a presigned URL S3 POST request to upload a file
 
@@ -46,8 +46,8 @@ response = create_presigned_post()
 print(response)
 
 
-
-files = { 'file': open(OBJECT_NAME_TO_UPLOAD, 'rb')}
-r = requests.post(response['url'], data=response['fields'], files=files)
+files = {'file': open(OBJECT_NAME_TO_UPLOAD, 'rb')}
+print(files)
+r = requests.post(
+    response['url'], data=response['fields'], files=files)
 print(r.status_code)
-
