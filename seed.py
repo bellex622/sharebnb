@@ -26,8 +26,22 @@ user2 = User(
 
 )
 
-db.session.add_all([user1, user2])
+listing1 = Listing(
+    user_id=1,
+    photo_url="",
+    price=50,
+    description="scenic",
+    is_reserved=False
+
+)
+
+listing2 = Listing(
+    user_id=2,
+    price=50,
+    description="earthy",
+    is_reserved=False
+
+)
+
+db.session.add_all([user1, user2, listing1, listing2])
 db.session.commit()
-
-
-

@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 
 from flask import (
-    Flask, render_template, request, flash, redirect, session, g, abort,
+    Flask, render_template, request, flash, redirect, session, g, abort, jsonify
 )
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
@@ -27,9 +27,8 @@ toolbar = DebugToolbarExtension(app)
 connect_db(app)
 
 ##############################################################################
-# TODO:User signup/login/logout
-# TODO: /login-authenticate user
-# TODO: /register
+# ✔ DONE: User signup/login/logout
+# ✔ DONE: /login-authenticate user
 # TODO: /listings: get all listings-GET
 # TODO: /listings : add a new listing-POST
 # TODO: /listings: update a listing-PATCH
@@ -56,46 +55,41 @@ def signup():
 
     user_data = request.json
     user = User.signup(
-            username=user_data['username'],
-            email=user_data['email'],
-            password=user_data['password'],
-            profile_image_url=DEFAULT_PROFILE_IMAGE_URL,
-            bio=user_data['bio'],
-            location=user_data['location']
+        username=user_data['username'],
+        email=user_data['email'],
+        password=user_data['password'],
+        profile_image_url=DEFAULT_PROFILE_IMAGE_URL,
+        bio=user_data['bio'],
+        location=user_data['location']
     )
 
     db.session.commit()
-    user=user.to_dict()
-    token =create_token(user)
+    user = user.to_dict()
+    token = create_token(user)
 
-    return {"token":token}
-
-
+    return {"token": token}
 
 
-
-@app.route('/login', methods=["GET", "POST"])
+@app.post('/login')
 def login():
     """Handle user login and redirect to homepage on success."""
 
-    form = LoginForm()
+    user = request.json
+    print(user)
 
-    if form.validate_on_submit():
-        user = User.authenticate(
-            form.username.data,
-            form.password.data,
-        )
+    username = user['username']
+    password = user['password']
 
-        if user:
-            do_login(user)
-            flash(f"Hello, {user.username}!", "success")
-            return redirect("/")
+    is_login = User.authenticate(username, password)
+    if is_login:
+        token = create_token(user)
+        return {"token": token}
 
-        flash("Invalid credentials.", 'danger')
+    return "Invalid login credentials"
 
-    return render_template('users/login.html', form=form)
+# TODO: React will take care of logout
 
-#TODO: move the front end
+
 @app.post('/logout')
 def logout():
     """Handle logout of user and redirect to homepage."""
@@ -110,6 +104,17 @@ def logout():
 
     flash("You have successfully logged out.", 'success')
     return redirect("/login")
+
+################################  listing #####################################
+
+
+@app.get('/listings')
+def show_listings():
+    listings = [listing.to_dict() for listing in Listing.query.all()]
+    return jsonify(listings=listings)
+
+# @app.get('/listings')
+# def show_listings():
 
 
 @app.get('/users/<int:user_id>')
@@ -180,9 +185,6 @@ def delete_user():
     db.session.commit()
 
     return redirect("/signup")
-
-
-
 
 
 @app.errorhandler(404)

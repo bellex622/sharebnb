@@ -9,6 +9,7 @@ bcrypt = Bcrypt()
 db = SQLAlchemy()
 
 DEFAULT_PROFILE_IMAGE_URL = "https://fdsfsd.com/d.jpg"
+DEFAULT_PHOTO_URL = "https://fdsfsd.com/d.jpg"
 
 
 def connect_db(app):
@@ -115,9 +116,11 @@ class User(db.Model):
     #     secondaryjoin=(Message.from_user==id),
     #     backref="received_from_user",
     # )
-    #backref: message.sender
-    sent_messages = db.relationship("Message", backref="sender",foreign_keys="Message.from_user")
-    received_messages = db.relationship("Message", backref="receiver",foreign_keys="Message.to_user")
+    # backref: message.sender
+    sent_messages = db.relationship(
+        "Message", backref="sender", foreign_keys="Message.from_user")
+    received_messages = db.relationship(
+        "Message", backref="receiver", foreign_keys="Message.to_user")
 
     def __repr__(self):
         return f"<User #{self.id}: {self.username}, {self.email}>"
@@ -188,13 +191,13 @@ class Listing(db.Model):
 
     user_id = db.Column(
         db.Integer,
-        db.ForeignKey('users.id'),
-        primary_key=True,
+        db.ForeignKey('users.id')
     )
 
     photo_url = db.Column(
         db.String(255),
-        nullable=False
+        nullable=False,
+        default=DEFAULT_PHOTO_URL
     )
 
     price = db.Column(
@@ -212,4 +215,12 @@ class Listing(db.Model):
         default=False
     )
 
+    def to_dict(self):
 
+        return {
+            "user_id": self.user_id,
+            "photo_url": self.photo_url,
+            "price": self.price,
+            "description": self.description,
+            "is_reserved": self.is_reserved,
+        }
