@@ -164,6 +164,17 @@ class User(db.Model):
 
         return False
 
+    def to_dict(self):
+        """Serialize user info to a dict."""
+
+        return {
+            "user_id": self.id,
+            "username": self.username,
+            "profile_image_url": self.profile_image_url,
+            "bio": self.bio,
+            "location": self.bio,
+        }
+
 
 class Listing(db.Model):
     """Outdoor space listings."""

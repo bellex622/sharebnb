@@ -6,12 +6,11 @@ from flask import (
 )
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
+import jwt
 
-from forms import (
-    UserAddForm, UserEditForm, LoginForm, MessageForm, CSRFProtection,
-)
 from models import (db, connect_db, User, Listing,
                     Message, DEFAULT_PROFILE_IMAGE_URL)
+from create_token import create_token
 
 CURR_USER_KEY = "curr_user"
 
@@ -28,41 +27,22 @@ toolbar = DebugToolbarExtension(app)
 connect_db(app)
 
 ##############################################################################
-# User signup/login/logout
+# TODO:User signup/login/logout
+# TODO: /login-authenticate user
+# TODO: /register
+# TODO: /listings: get all listings-GET
+# TODO: /listings : add a new listing-POST
+# TODO: /listings: update a listing-PATCH
+# TODO: /listings: delete a listing-DELETE
+# TODO: /users/user: get user profile-GET
+# TODO: /users/listings: nice to have
+# TODO: /upload: upload pic-POST
+# TODO: /user/messages: show the messages of a user-GET
+# TODO: /messages: send a message-POST
+# TODO: /messages: delete a message-POST
 
 
-@app.before_request
-def add_user_to_g():
-    """If we're logged in, add curr user to Flask global."""
-
-    if CURR_USER_KEY in session:
-        g.user = User.query.get(session[CURR_USER_KEY])
-
-    else:
-        g.user = None
-
-
-@app.before_request
-def add_csrf_only_form():
-    """Add a CSRF-only form so that every route can use it."""
-
-    g.csrf_form = CSRFProtection()
-
-
-def do_login(user):
-    """Log in user."""
-
-    session[CURR_USER_KEY] = user.id
-
-
-def do_logout():
-    """Log out user."""
-
-    if CURR_USER_KEY in session:
-        del session[CURR_USER_KEY]
-
-
-@app.route('/signup', methods=["GET", "POST"])
+@app.post('/signup')
 def signup():
     """Handle user signup.
 
@@ -74,30 +54,24 @@ def signup():
     and re-present form.
     """
 
-    do_logout()
+    user_data = request.json
+    user = User.signup(
+            username=user_data['username'],
+            email=user_data['email'],
+            password=user_data['password'],
+            profile_image_url=DEFAULT_PROFILE_IMAGE_URL,
+            bio=user_data['bio'],
+            location=user_data['location']
+    )
 
-    form = UserAddForm()
+    db.session.commit()
+    user=user.to_dict()
+    token =create_token(user)
 
-    if form.validate_on_submit():
-        try:
-            user = User.signup(
-                username=form.username.data,
-                password=form.password.data,
-                email=form.email.data,
-                image_url=form.image_url.data or User.image_url.default.arg,
-            )
-            db.session.commit()
+    return {"token":token}
 
-        except IntegrityError:
-            flash("Username already taken", 'danger')
-            return render_template('users/signup.html', form=form)
 
-        do_login(user)
 
-        return redirect("/")
-
-    else:
-        return render_template('users/signup.html', form=form)
 
 
 @app.route('/login', methods=["GET", "POST"])
@@ -121,7 +95,7 @@ def login():
 
     return render_template('users/login.html', form=form)
 
-
+#TODO: move the front end
 @app.post('/logout')
 def logout():
     """Handle logout of user and redirect to homepage."""
@@ -208,15 +182,7 @@ def delete_user():
     return redirect("/signup")
 
 
-# TODO: route for get listing
-# TODO: route for post listing
-# TODO: route for patch listing
-# TODO: route for delete listing
 
-# TODO: route for get messages
-# TODO: route for post messages
-# TODO: route for patch messages
-# TODO: route for delete messages
 
 
 @app.errorhandler(404)
