@@ -27,7 +27,7 @@ user2 = User(
 )
 
 listing1 = Listing(
-    user_id=1,
+    username="belle",
     photo_url="",
     price=50,
     description="scenic",
@@ -36,7 +36,7 @@ listing1 = Listing(
 )
 
 listing2 = Listing(
-    user_id=2,
+    username="dan",
     price=50,
     description="earthy",
     is_reserved=False

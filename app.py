@@ -29,11 +29,11 @@ connect_db(app)
 ##############################################################################
 # ✔ DONE: User signup/login/logout
 # ✔ DONE: /login-authenticate user
-# TODO: /listings: get all listings-GET
-# TODO: /listings : add a new listing-POST
-# TODO: /listings: update a listing-PATCH
-# TODO: /listings: delete a listing-DELETE
-# TODO: /users/user: get user profile-GET
+# ✔ DONE: /listings: get all listings-GET
+# ✔ DONE: /listings : add a new listing-POST
+# ✔ DONE: /listings: update a listing-PATCH
+# ✔ DONE: /listings: delete a listing-DELETE
+# ✔ DONE: /users/user: get user profile-GET
 # TODO: /users/listings: nice to have
 # TODO: /upload: upload pic-POST
 # TODO: /user/messages: show the messages of a user-GET
@@ -113,21 +113,80 @@ def show_listings():
     listings = [listing.to_dict() for listing in Listing.query.all()]
     return jsonify(listings=listings)
 
-# @app.get('/listings')
-# def show_listings():
+@app.post('/listings')
+def add_new_listing():
+    """Add new listing, and return data about the new listing.
+
+    Returns JSON like:
+        {cupcake: [{id, username, photo_url, price, description, is_reserved}]}
+    """
+
+    data = request.json
+
+    listing = Listing(
+    username=data['username'],
+    photo_url=data['photo_url'] or None,
+    price=data['price'],
+    description=data['description'],
+    is_reserved=False)
+
+    db.session.add(listing)
+    db.session.commit()
+
+    # POST requests should return HTTP status of 201 CREATED
+    return (jsonify(listing=listing.to_dict()), 201)
+
+@app.patch("/listings/<int:listing_id>")
+def update_list(listing_id):
+    """Update listing from data in request. Return updated listing.
+
+    Returns JSON like:
+        {cupcake: [{id, username, photo_url, price, description, is_reserved}]}
+    """
+
+    data = request.json
+
+    listing = Listing.query.get_or_404(listing_id)
+
+    listing.photo_url = data.get('flavor', listing.photo_url)
+    listing.price = data.get('price', listing.price)
+    listing.description = data.get('size', listing.description)
+    listing.is_reserved = data.get('size', listing.is_reserved)
 
 
-@app.get('/users/<int:user_id>')
-def show_user(user_id):
+    db.session.add(listing)
+    db.session.commit()
+
+    return jsonify(listing=listing.to_dict())
+
+@app.delete("/listings/<int:listing_id>")
+def delete_listing(listing_id):
+    """Delete listing and return confirmation message.
+
+    Returns JSON of {message: "Deleted"}
+    """
+
+    listing = Listing.query.get_or_404(listing_id)
+
+    db.session.delete(listing)
+    db.session.commit()
+
+    return jsonify(deleted=listing_id)
+
+
+
+
+
+@app.get('/users/<username>')
+def show_user(username):
     """Show user profile."""
+    print("username is", username)
+    user = User.query.get_or_404(username)
+    print("user is", user)
+    return jsonify(user=user.to_dict())
 
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
 
-    user = User.query.get_or_404(user_id)
 
-    return render_template('users/show.html', user=user)
 
 # TODO: route for patch user
 

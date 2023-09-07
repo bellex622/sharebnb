@@ -51,14 +51,14 @@ class Message(db.Model):
     )
 
     from_user = db.Column(
-        db.Integer,
-        db.ForeignKey('users.id'),
+        db.String(30),
+        db.ForeignKey('users.username'),
         nullable=False,
     )
 
     to_user = db.Column(
-        db.Integer,
-        db.ForeignKey('users.id'),
+        db.String(30),
+        db.ForeignKey('users.username'),
         nullable=False,
     )
 
@@ -68,15 +68,11 @@ class User(db.Model):
 
     __tablename__ = 'users'
 
-    id = db.Column(
-        db.Integer,
-        primary_key=True,
-    )
-
     username = db.Column(
         db.String(30),
         nullable=False,
         unique=True,
+        primary_key=True,
     )
 
     email = db.Column(
@@ -189,9 +185,9 @@ class Listing(db.Model):
         primary_key=True,
     )
 
-    user_id = db.Column(
-        db.Integer,
-        db.ForeignKey('users.id')
+    username = db.Column(
+        db.String(30),
+        db.ForeignKey('users.username')
     )
 
     photo_url = db.Column(
@@ -218,7 +214,7 @@ class Listing(db.Model):
     def to_dict(self):
 
         return {
-            "user_id": self.user_id,
+            "username": self.username,
             "photo_url": self.photo_url,
             "price": self.price,
             "description": self.description,
