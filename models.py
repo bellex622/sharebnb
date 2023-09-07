@@ -62,6 +62,17 @@ class Message(db.Model):
         nullable=False,
     )
 
+    def to_dict(self):
+        """Serialize user info to a dict."""
+
+        return {
+            "text": self.text,
+            "sent_at": self.sent_at,
+            "read_at": self.read_at,
+            "from_user": self.from_user,
+            "to_user": self.to_user,
+        }
+
 
 class User(db.Model):
     """User in the system."""
@@ -119,7 +130,7 @@ class User(db.Model):
         "Message", backref="receiver", foreign_keys="Message.to_user")
 
     def __repr__(self):
-        return f"<User #{self.id}: {self.username}, {self.email}>"
+        return f"<User #{self.username}: {self.username}, {self.email}>"
 
     @classmethod
     def signup(cls, username, email, password, profile_image_url=DEFAULT_PROFILE_IMAGE_URL, bio="", location=""):

@@ -36,7 +36,7 @@ connect_db(app)
 # ✔ DONE: /users/user: get user profile-GET
 # TODO: /users/listings: nice to have
 # TODO: /upload: upload pic-POST
-# TODO: /user/messages: show the messages of a user-GET
+# ✔ DONE: /user/messages: show the messages of a user-GET
 # TODO: /messages: send a message-POST
 # TODO: /messages: delete a message-POST
 
@@ -48,9 +48,6 @@ def signup():
     Create new user and add to DB. Redirect to home page.
 
     If form not valid, present form.
-
-    If the there already is a user with that username: flash message
-    and re-present form.
     """
 
     user_data = request.json
@@ -113,6 +110,7 @@ def show_listings():
     listings = [listing.to_dict() for listing in Listing.query.all()]
     return jsonify(listings=listings)
 
+
 @app.post('/listings')
 def add_new_listing():
     """Add new listing, and return data about the new listing.
@@ -124,17 +122,18 @@ def add_new_listing():
     data = request.json
 
     listing = Listing(
-    username=data['username'],
-    photo_url=data['photo_url'] or None,
-    price=data['price'],
-    description=data['description'],
-    is_reserved=False)
+        username=data['username'],
+        photo_url=data['photo_url'] or None,
+        price=data['price'],
+        description=data['description'],
+        is_reserved=False)
 
     db.session.add(listing)
     db.session.commit()
 
     # POST requests should return HTTP status of 201 CREATED
     return (jsonify(listing=listing.to_dict()), 201)
+
 
 @app.patch("/listings/<int:listing_id>")
 def update_list(listing_id):
@@ -153,11 +152,11 @@ def update_list(listing_id):
     listing.description = data.get('size', listing.description)
     listing.is_reserved = data.get('size', listing.is_reserved)
 
-
     db.session.add(listing)
     db.session.commit()
 
     return jsonify(listing=listing.to_dict())
+
 
 @app.delete("/listings/<int:listing_id>")
 def delete_listing(listing_id):
@@ -174,9 +173,6 @@ def delete_listing(listing_id):
     return jsonify(deleted=listing_id)
 
 
-
-
-
 @app.get('/users/<username>')
 def show_user(username):
     """Show user profile."""
@@ -186,7 +182,19 @@ def show_user(username):
     return jsonify(user=user.to_dict())
 
 
+@app.get('/users/<username>/messages')
+def show_user_messages(username):
+    "Show user's messages."
 
+    user = User.query.get_or_404(username)
+    print("this is user => ", user)
+
+    sent_messages = [message.to_dict() for message in user.sent_messages]
+    received_messages = [message.to_dict()
+                         for message in user.received_messages]
+    print("messages", sent_messages)
+
+    return jsonify(messages=[sent_messages, received_messages])
 
 # TODO: route for patch user
 

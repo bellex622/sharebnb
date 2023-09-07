@@ -43,5 +43,17 @@ listing2 = Listing(
 
 )
 
-db.session.add_all([user1, user2, listing1, listing2])
+message1 = Message(
+    text="hello",
+    from_user="belle",
+    to_user="dan"
+)
+
+message2 = Message(
+    text="hello",
+    from_user="dan",
+    to_user="belle"
+)
+
+db.session.add_all([user1, user2, listing1, listing2, message1, message2])
 db.session.commit()
