@@ -34,11 +34,12 @@ connect_db(app)
 # ✔ DONE: /listings: update a listing-PATCH
 # ✔ DONE: /listings: delete a listing-DELETE
 # ✔ DONE: /users/user: get user profile-GET
+# ✔ DONE: /users/user: edit user profile-POST
 # TODO: /users/listings: nice to have
 # TODO: /upload: upload pic-POST
 # ✔ DONE: /user/messages: show the messages of a user-GET
-# TODO: /messages: send a message-POST
-# TODO: /messages: delete a message-POST
+# ✔ DONE: /messages: send a message-POST
+# ✔ DONE:  /messages: delete a message-POST
 
 
 @app.post('/signup')
@@ -152,7 +153,6 @@ def update_list(listing_id):
     listing.description = data.get('size', listing.description)
     listing.is_reserved = data.get('size', listing.is_reserved)
 
-    db.session.add(listing)
     db.session.commit()
 
     return jsonify(listing=listing.to_dict())
@@ -162,7 +162,7 @@ def update_list(listing_id):
 def delete_listing(listing_id):
     """Delete listing and return confirmation message.
 
-    Returns JSON of {message: "Deleted"}
+    Returns JSON of {listing: "Deleted"}
     """
 
     listing = Listing.query.get_or_404(listing_id)
@@ -170,7 +170,7 @@ def delete_listing(listing_id):
     db.session.delete(listing)
     db.session.commit()
 
-    return jsonify(deleted=listing_id)
+    return jsonify(listing="Deleted")
 
 
 @app.get('/users/<username>')
@@ -179,6 +179,23 @@ def show_user(username):
     print("username is", username)
     user = User.query.get_or_404(username)
     print("user is", user)
+    return jsonify(user=user.to_dict())
+
+
+@app.post('/users/<username>')
+def edit_user(username):
+    """Show user profile."""
+    user_data = request.json
+    user = User.query.get_or_404(username)
+
+    user.username = user_data['username'] or user.username
+    user.email = user_data['email'] or user.email
+    user.profile_image_url = user_data['profile_image_url'] or user.profile_image_url
+    user.bio = user_data['bio'] or user.bio
+    user.location = user_data['location'] or user.location
+
+    db.session.commit()
+
     return jsonify(user=user.to_dict())
 
 
@@ -196,62 +213,35 @@ def show_user_messages(username):
 
     return jsonify(messages=[sent_messages, received_messages])
 
-# TODO: route for patch user
 
+@app.post('/users/<username>/messages')
+def send_message(username):
+    "Show user's messages."
 
-@app.route('/users/profile', methods=["GET", "POST"])
-def edit_profile():
-    """Update profile for current user.
-
-    Redirect to user page on success.
-    """
-
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
-
-    user = g.user
-    form = UserEditForm(obj=user)
-
-    if form.validate_on_submit():
-        if User.authenticate(user.username, form.password.data):
-            user.username = form.username.data
-            user.email = form.email.data
-            user.image_url = form.image_url.data or DEFAULT_IMAGE_URL
-            user.header_image_url = (
-                form.header_image_url.data or DEFAULT_HEADER_IMAGE_URL)
-            user.bio = form.bio.data
-
-            db.session.commit()
-            return redirect(f"/users/{user.id}")
-
-        flash("Wrong password, please try again.", 'danger')
-
-    return render_template('users/edit.html', form=form, user_id=user.id)
-
-# TODO: route for delete user
-
-
-@app.post('/users/delete')
-def delete_user():
-    """Delete user.
-
-    Redirect to signup page.
-    """
-
-    form = g.csrf_form
-
-    if not form.validate_on_submit() or not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
-
-    do_logout()
-
-    Message.query.filter_by(user_id=g.user.id).delete()
-    db.session.delete(g.user)
+    message_data = request.json
+    message = Message(
+        text=message_data['text'],
+        to_user=message_data['to_user'],
+        from_user=message_data['from_user']
+    )
+    db.session.add(message)
     db.session.commit()
 
-    return redirect("/signup")
+    return jsonify(message=message.to_dict())
+
+@app.delete("/messages/<int:message_id>")
+def delete_message(message_id):
+    """Delete listing and return confirmation message.
+
+    Returns JSON of {message: "Deleted"}
+    """
+
+    message = Message.query.get_or_404(message_id)
+
+    db.session.delete(message)
+    db.session.commit()
+
+    return jsonify(message="Deleted")
 
 
 @app.errorhandler(404)

@@ -178,11 +178,11 @@ class User(db.Model):
         """Serialize user info to a dict."""
 
         return {
-            "user_id": self.id,
             "username": self.username,
+            "email": self.email,
             "profile_image_url": self.profile_image_url,
             "bio": self.bio,
-            "location": self.bio,
+            "location": self.location,
         }
 
 
