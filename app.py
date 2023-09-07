@@ -1,4 +1,9 @@
+from upload_file import allowed_file, s3
+from create_token import create_token
+from models import (db, connect_db, User, Listing,
+                    Message, DEFAULT_PROFILE_IMAGE_URL)
 import os
+import boto3
 from dotenv import load_dotenv
 
 from flask import (
@@ -9,12 +14,7 @@ from sqlalchemy.exc import IntegrityError
 import jwt
 
 from werkzeug.utils import secure_filename
-
-
-from models import (db, connect_db, User, Listing,
-                    Message, DEFAULT_PROFILE_IMAGE_URL)
-from create_token import create_token
-from upload_file import allowed_file
+bucket = os.environ['BUCKET']
 
 CURR_USER_KEY = "curr_user"
 
@@ -234,6 +234,7 @@ def send_message(username):
 
     return jsonify(message=message.to_dict())
 
+
 @app.delete("/messages/<int:message_id>")
 def delete_message(message_id):
     """Delete listing and return confirmation message.
@@ -248,6 +249,7 @@ def delete_message(message_id):
 
     return jsonify(message="Deleted")
 
+
 @app.post('/upload')
 def upload_file():
     print("we got here!!!!")
@@ -261,11 +263,11 @@ def upload_file():
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        s3.upload_file(f"user_uploads/{filename}",
+                       bucket, filename, {'ContentType': 'image/jpeg'})
         return 'file uploaded successfully'
 
     return 'File uploaded failed'
-
-
 
 
 @app.errorhandler(404)
