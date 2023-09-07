@@ -8,9 +8,13 @@ from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 import jwt
 
+from werkzeug.utils import secure_filename
+
+
 from models import (db, connect_db, User, Listing,
                     Message, DEFAULT_PROFILE_IMAGE_URL)
 from create_token import create_token
+from upload_file import allowed_file
 
 CURR_USER_KEY = "curr_user"
 
@@ -22,6 +26,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
 app.config['SQLALCHEMY_ECHO'] = False
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
 app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
+app.config['UPLOAD_FOLDER'] = 'user_uploads'
 toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
@@ -242,6 +247,25 @@ def delete_message(message_id):
     db.session.commit()
 
     return jsonify(message="Deleted")
+
+@app.post('/upload')
+def upload_file():
+    print("we got here!!!!")
+    if 'file' not in request.files:
+        return 'No file part'
+
+    file = request.files['file']
+    if file.filename == '':
+        return 'No selected file'
+
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        return 'file uploaded successfully'
+
+    return 'File uploaded failed'
+
+
 
 
 @app.errorhandler(404)
