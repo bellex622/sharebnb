@@ -1,7 +1,7 @@
 from upload_file import allowed_file, s3
 from create_token import create_token
 from models import (db, connect_db, User, Listing,
-                    Message, DEFAULT_PROFILE_IMAGE_URL)
+                    Message, Image, DEFAULT_PROFILE_IMAGE_URL)
 import os
 import boto3
 from dotenv import load_dotenv
@@ -11,7 +11,6 @@ from flask import (
 )
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
-import jwt
 
 from werkzeug.utils import secure_filename
 bucket = os.environ['BUCKET']
@@ -265,6 +264,13 @@ def upload_file():
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         s3.upload_file(f"user_uploads/{filename}",
                        bucket, filename, {'ContentType': 'image/jpeg'})
+        image_url = f"https://{bucket}.s3.amazonaws.com/{filename}"
+        image = Image(
+            image_url=image_url,
+            listing_id=1
+        )
+        db.session.add(image)
+        db.session.commit()
         return 'file uploaded successfully'
 
     return 'File uploaded failed'

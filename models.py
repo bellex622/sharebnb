@@ -23,6 +23,27 @@ def connect_db(app):
     db.init_app(app)
 
 
+class Image(db.Model):
+    """Image URL from S3 bucket."""
+
+    __tablename__ = 'images'
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+    )
+
+    image_url = db.Column(
+        db.Text,
+        nullable=False,
+    )
+
+    listing_id = db.Column(
+        db.Integer,
+        db.ForeignKey('listings.id'),
+    )
+
+
 class Message(db.Model):
     """Messages between hosts and guests."""
 
@@ -221,6 +242,8 @@ class Listing(db.Model):
         db.Boolean,
         default=False
     )
+
+    images = db.relationship("Image", backref="listing")
 
     def to_dict(self):
 
