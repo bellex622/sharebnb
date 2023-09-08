@@ -43,6 +43,14 @@ class Image(db.Model):
         db.ForeignKey('listings.id'),
     )
 
+    def to_dict(self):
+        """Serialize user info to a dict."""
+
+        return {
+        "id": self.id,
+        "image_url": self.image_url
+        }
+
 
 class Message(db.Model):
     """Messages between hosts and guests."""
@@ -217,15 +225,14 @@ class Listing(db.Model):
         primary_key=True,
     )
 
+    title = db.Column(
+        db.String(100),
+        nullable=False
+    )
+
     username = db.Column(
         db.String(30),
         db.ForeignKey('users.username')
-    )
-
-    photo_url = db.Column(
-        db.String(255),
-        nullable=False,
-        default=DEFAULT_PHOTO_URL
     )
 
     price = db.Column(
@@ -248,8 +255,9 @@ class Listing(db.Model):
     def to_dict(self):
 
         return {
+            "id": self.id,
+            "title": self.title,
             "username": self.username,
-            "photo_url": self.photo_url,
             "price": self.price,
             "description": self.description,
             "is_reserved": self.is_reserved,

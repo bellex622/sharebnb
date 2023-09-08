@@ -1,31 +1,31 @@
+import os
+from dotenv import load_dotenv
+from flask import (
+    Flask, render_template, request, flash, redirect, session, g, abort, jsonify
+)
+from flask_cors import CORS
+from flask_debugtoolbar import DebugToolbarExtension
+from sqlalchemy.exc import IntegrityError
 from upload_file import allowed_file, s3
 from create_token import create_token
 from models import (db, connect_db, User, Listing,
                     Message, Image, DEFAULT_PROFILE_IMAGE_URL)
-import os
-import boto3
-from dotenv import load_dotenv
-
-from flask import (
-    Flask, render_template, request, flash, redirect, session, g, abort, jsonify
-)
-from flask_debugtoolbar import DebugToolbarExtension
-from sqlalchemy.exc import IntegrityError
-
 from werkzeug.utils import secure_filename
-bucket = os.environ['BUCKET']
-
-CURR_USER_KEY = "curr_user"
 
 load_dotenv()
 
 app = Flask(__name__)
+CORS(app)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
 app.config['SQLALCHEMY_ECHO'] = False
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
 app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
-app.config['UPLOAD_FOLDER'] = 'user_uploads'
+
+
+BUCKET = os.environ['BUCKET']
+UPLOAD_FOLDER = 'user_uploads'
+
 toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
@@ -40,7 +40,6 @@ connect_db(app)
 # ✔ DONE: /users/user: get user profile-GET
 # ✔ DONE: /users/user: edit user profile-POST
 # TODO: /users/listings: nice to have
-# TODO: /upload: upload pic-POST
 # ✔ DONE: /user/messages: show the messages of a user-GET
 # ✔ DONE: /messages: send a message-POST
 # ✔ DONE:  /messages: delete a message-POST
@@ -89,23 +88,6 @@ def login():
 
     return "Invalid login credentials"
 
-# TODO: React will take care of logout
-
-
-@app.post('/logout')
-def logout():
-    """Handle logout of user and redirect to homepage."""
-
-    form = g.csrf_form
-
-    if not form.validate_on_submit() or not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
-
-    do_logout()
-
-    flash("You have successfully logged out.", 'success')
-    return redirect("/login")
 
 ################################  listing #####################################
 
@@ -121,14 +103,13 @@ def add_new_listing():
     """Add new listing, and return data about the new listing.
 
     Returns JSON like:
-        {cupcake: [{id, username, photo_url, price, description, is_reserved}]}
+        {listing: [{id, title, username, photo_url, price, description, is_reserved}]}
     """
 
     data = request.json
 
     listing = Listing(
         username=data['username'],
-        photo_url=data['photo_url'] or None,
         price=data['price'],
         description=data['description'],
         is_reserved=False)
@@ -139,21 +120,38 @@ def add_new_listing():
     # POST requests should return HTTP status of 201 CREATED
     return (jsonify(listing=listing.to_dict()), 201)
 
+@app.get("/listings/<int:listing_id>")
+def show_listing(listing_id):
+    """Show a single listing from data in request.
+
+    Returns JSON like:
+        {listing: [{id, title, username, photo_url, price, description, is_reserved}]}
+    """
+
+    listing = Listing.query.get_or_404(listing_id)
+    images = [image.to_dict() for image in listing.images]
+    listing = listing.to_dict()
+    print("here are the images", images)
+    listing['images'] = images
+    print("the listing", listing)
+
+
+    return jsonify(listing=listing)
 
 @app.patch("/listings/<int:listing_id>")
 def update_list(listing_id):
     """Update listing from data in request. Return updated listing.
 
     Returns JSON like:
-        {cupcake: [{id, username, photo_url, price, description, is_reserved}]}
+        {listing: [{id, title, username, photo_url, price, description, is_reserved}]}
     """
 
     data = request.json
 
     listing = Listing.query.get_or_404(listing_id)
 
-    listing.photo_url = data.get('flavor', listing.photo_url)
     listing.price = data.get('price', listing.price)
+    listing.title = data.get('title', listing.title)
     listing.description = data.get('size', listing.description)
     listing.is_reserved = data.get('size', listing.is_reserved)
 
@@ -261,10 +259,10 @@ def upload_file():
 
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        s3.upload_file(f"user_uploads/{filename}",
-                       bucket, filename, {'ContentType': 'image/jpeg'})
-        image_url = f"https://{bucket}.s3.amazonaws.com/{filename}"
+        file.save(os.path.join(UPLOAD_FOLDER, filename))
+        s3.upload_file(f"{UPLOAD_FOLDER}/{filename}",
+                       BUCKET, filename, {'ContentType': 'image/jpeg'})
+        image_url = f"https://{BUCKET}.s3.amazonaws.com/{filename}"
         image = Image(
             image_url=image_url,
             listing_id=1
