@@ -48,10 +48,7 @@ connect_db(app)
 @app.post('/signup')
 def signup():
     """Handle user signup.
-
-    Create new user and add to DB. Redirect to home page.
-
-    If form not valid, present form.
+    Create new user, add new user to DB and create a token.
     """
 
     user_data = request.json
@@ -73,7 +70,7 @@ def signup():
 
 @app.post('/login')
 def login():
-    """Handle user login and redirect to homepage on success."""
+    """Handle user login and create a token."""
 
     user = request.json
     print(user)
@@ -94,6 +91,7 @@ def login():
 
 @app.get('/listings')
 def show_listings():
+    """Show all listings."""
     listings = [listing.to_dict() for listing in Listing.query.all()]
     return jsonify(listings=listings)
 
@@ -103,12 +101,14 @@ def add_new_listing():
     """Add new listing, and return data about the new listing.
 
     Returns JSON like:
-        {listing: [{id, title, username, photo_url, price, description, is_reserved}]}
+        {listing: [{id, title, username, price, description, is_reserved}]}
     """
+    print("we reach add new listing route!!!")
 
     data = request.json
 
     listing = Listing(
+        title=data['title'],
         username=data['username'],
         price=data['price'],
         description=data['description'],
@@ -120,12 +120,13 @@ def add_new_listing():
     # POST requests should return HTTP status of 201 CREATED
     return (jsonify(listing=listing.to_dict()), 201)
 
+
 @app.get("/listings/<int:listing_id>")
 def show_listing(listing_id):
-    """Show a single listing from data in request.
+    """Show a single listing by listing_id in request.
 
     Returns JSON like:
-        {listing: [{id, title, username, photo_url, price, description, is_reserved}]}
+        {listing: {id, title, username, images, price, description, is_reserved}}
     """
 
     listing = Listing.query.get_or_404(listing_id)
@@ -135,15 +136,15 @@ def show_listing(listing_id):
     listing['images'] = images
     print("the listing", listing)
 
-
     return jsonify(listing=listing)
+
 
 @app.patch("/listings/<int:listing_id>")
 def update_list(listing_id):
     """Update listing from data in request. Return updated listing.
 
     Returns JSON like:
-        {listing: [{id, title, username, photo_url, price, description, is_reserved}]}
+        {listing: [{id, title, username, price, description, is_reserved}]}
     """
 
     data = request.json
@@ -186,7 +187,7 @@ def show_user(username):
 
 @app.post('/users/<username>')
 def edit_user(username):
-    """Show user profile."""
+    """Edit user profile."""
     user_data = request.json
     user = User.query.get_or_404(username)
 
@@ -203,7 +204,7 @@ def edit_user(username):
 
 @app.get('/users/<username>/messages')
 def show_user_messages(username):
-    "Show user's messages."
+    "Show users' messages."
 
     user = User.query.get_or_404(username)
     print("this is user => ", user)
@@ -218,7 +219,7 @@ def show_user_messages(username):
 
 @app.post('/users/<username>/messages')
 def send_message(username):
-    "Show user's messages."
+    "Send message to user."
 
     message_data = request.json
     message = Message(
@@ -234,7 +235,7 @@ def send_message(username):
 
 @app.delete("/messages/<int:message_id>")
 def delete_message(message_id):
-    """Delete listing and return confirmation message.
+    """Delete message and return confirmation message.
 
     Returns JSON of {message: "Deleted"}
     """
@@ -249,6 +250,9 @@ def delete_message(message_id):
 
 @app.post('/upload')
 def upload_file():
+    """Receive picture from user upload, save it on local server,
+    upload to Amazon S3 and get the image url, then save the image url
+     in DB """
     print("we got here!!!!")
     if 'file' not in request.files:
         return 'No file part'

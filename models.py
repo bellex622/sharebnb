@@ -44,7 +44,7 @@ class Image(db.Model):
     )
 
     def to_dict(self):
-        """Serialize user info to a dict."""
+        """Serialize image url info to a dict."""
 
         return {
         "id": self.id,
@@ -92,7 +92,7 @@ class Message(db.Model):
     )
 
     def to_dict(self):
-        """Serialize user info to a dict."""
+        """Serialize message info to a dict."""
 
         return {
             "text": self.text,
@@ -145,14 +145,7 @@ class User(db.Model):
     )
 
     listings = db.relationship('Listing', backref="user")
-    # sent_to_user = db.relationship(
-    #     "User",
-    #     secondary="messages",
-    #     primaryjoin=(Message.to_user==id),
-    #     secondaryjoin=(Message.from_user==id),
-    #     backref="received_from_user",
-    # )
-    # backref: message.sender
+
     sent_messages = db.relationship(
         "Message", backref="sender", foreign_keys="Message.from_user")
     received_messages = db.relationship(
@@ -165,7 +158,7 @@ class User(db.Model):
     def signup(cls, username, email, password, profile_image_url=DEFAULT_PROFILE_IMAGE_URL, bio="", location=""):
         """Sign up user.
 
-        Hashes password and adds user to session.
+        Hashes password and adds user to database.
         """
 
         hashed_pwd = bcrypt.generate_password_hash(password).decode('UTF-8')
@@ -216,7 +209,7 @@ class User(db.Model):
 
 
 class Listing(db.Model):
-    """Outdoor space listings."""
+    """Listings."""
 
     __tablename__ = 'listings'
 

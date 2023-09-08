@@ -9,7 +9,7 @@ SECRET_KEY = os.environ['SECRET_KEY']
 
 
 def create_token(user):
-
+    """Create token using JWT."""
     payload = {
         "username": user['username']
     }
